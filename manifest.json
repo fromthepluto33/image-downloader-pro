@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Image Downloader Pro",
+  "version": "2.1",
+  "description": "Скачивайте изображения с любой страницы.",
+  "permissions": ["activeTab", "scripting", "downloads", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "Image Downloader Pro",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

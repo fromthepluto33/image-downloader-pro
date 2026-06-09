@@ -1,10 +1,24 @@
 {
   "manifest_version": 3,
   "name": "Image Downloader Pro",
-  "version": "2.1",
-  "description": "Скачивайте изображения с любой страницы.",
-  "permissions": ["activeTab", "scripting", "downloads", "storage"],
-  "host_permissions": ["<all_urls>"],
+  "version": "1.0.0",
+  "description": "Скачивает изображения со страницы в ZIP-архив",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": [
+      "shared/common.js",
+      "shared/zip.js",
+      "background.js"
+    ]
+  },
   "action": {
     "default_title": "Image Downloader Pro",
     "default_icon": {
@@ -18,12 +32,25 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "background": {
-    "service_worker": "background.js"
+  "browser_specific_settings": {
+    "gecko": {
+      "strict_min_version": "140.0",
+      "id": "fromthemoon33@gmail.com",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
   },
   "web_accessible_resources": [
     {
-      "resources": ["icons/*"],
+      "resources": [
+        "content/inject.css",
+        "icons/icon48.png",
+        "icons/icon16.png",
+        "icons/icon128.png"
+      ],
       "matches": ["<all_urls>"]
     }
   ]

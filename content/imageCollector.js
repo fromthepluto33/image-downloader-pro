@@ -1,14 +1,12 @@
 /**
- * Image Downloader Pro — Image Collector
+ * Image Downloader Pro — сбор изображений со страницы.
  */
 window.IDP = window.IDP || {};
 
-(function(exports) {
-  const U = window.IDP;
+(function (exports) {
+  const { querySelectorAllShadows, getExtFromUrl } = window.IDP;
+  const { normalizeFormat } = window.IDPCommon;
 
-  /**
-   * Запрашивает размер файла через HEAD-запрос (без загрузки тела).
-   */
   async function fetchSize(url) {
     try {
       const resp = await fetch(url, { method: 'HEAD', mode: 'cors' });
@@ -16,7 +14,9 @@ window.IDP = window.IDP || {};
         const len = resp.headers.get('content-length');
         if (len) return parseInt(len, 10);
       }
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
     return null;
   }
 
@@ -25,130 +25,103 @@ window.IDP = window.IDP || {};
     const processed = new Set();
 
     function addImage(url, width, height, el) {
-      if (!url || processed.has(url)) return;
+      if (!url || !url.startsWith('http') || processed.has(url)) return;
       processed.add(url);
+      const ext = normalizeFormat(getExtFromUrl(url) || 'jpg');
       images.push({
         url,
         width: width || 0,
         height: height || 0,
-        ext: (url.split('.').pop() || 'jpg').toLowerCase().substring(0, 5),
+        ext,
         size: null,
         el: el || null
       });
     }
 
-    // 1. Plain <img> elements + srcset
-    document.querySelectorAll('img').forEach(img => {
+    function scanImg(img) {
       const src = img.src || img.getAttribute('src') || img.currentSrc;
-      if (src && src.startsWith('http')) addImage(src, img.naturalWidth || img.width, img.naturalHeight || img.height, img);
+      if (src) addImage(src, img.naturalWidth || img.width, img.naturalHeight || img.height, img);
       if (img.srcset) {
-        img.srcset.split(',').forEach(srcsetPart => {
-          const url = srcsetPart.trim().split(' ')[0];
-          if (url && url.startsWith('http')) addImage(url, img.naturalWidth || img.width, img.naturalHeight || img.height, img);
+        img.srcset.split(',').forEach((part) => {
+          const url = part.trim().split(/\s+/)[0];
+          if (url) addImage(url, img.naturalWidth || img.width, img.naturalHeight || img.height, img);
         });
       }
-    });
+    }
 
-    // 2. document.images
-    try {
-      for (const img of document.images) {
-        const src = img.src || img.currentSrc;
-        if (src && src.startsWith('http')) addImage(src, img.naturalWidth || img.width, img.naturalHeight || img.height, img);
-      }
-    } catch (e) {}
+    document.querySelectorAll('img').forEach(scanImg);
 
-    // 3. Shadow DOM images
     try {
-      const shadowImgs = U.querySelectorAllShadows('img');
-      shadowImgs.forEach(img => {
-        const src = img.src || img.getAttribute('src') || img.currentSrc;
-        if (src && src.startsWith('http')) addImage(src, img.naturalWidth || img.width, img.naturalHeight || img.height, img);
+      for (const img of document.images) scanImg(img);
+    } catch {
+      /* ignore */
+    }
+
+    try {
+      querySelectorAllShadows('img').forEach(scanImg);
+    } catch {
+      /* ignore */
+    }
+
+    document.querySelectorAll('source[srcset]').forEach((source) => {
+      source.srcset.split(',').forEach((part) => {
+        const url = part.trim().split(/\s+/)[0];
+        if (url) addImage(url, 0, 0, source);
       });
-    } catch (e) {}
+    });
 
-    // 4. <source> elements
-    document.querySelectorAll('source').forEach(source => {
-      if (source.srcset) {
-        source.srcset.split(',').map(s => s.trim().split(' ')[0]).forEach(url => {
-          if (url && url.startsWith('http')) addImage(url, 0, 0, source);
-        });
+    document.querySelectorAll('video[poster]').forEach((video) => {
+      if (video.poster) {
+        addImage(video.poster, video.videoWidth || video.width, video.videoHeight || video.height, video);
       }
     });
 
-    // 5. <video poster>
-    document.querySelectorAll('video').forEach(video => {
-      if (video.poster && video.poster.startsWith('http')) addImage(video.poster, video.videoWidth || video.width, video.videoHeight || video.height, video);
+    document.querySelectorAll('input[type="image"]').forEach((input) => {
+      if (input.src) addImage(input.src, 0, 0, input);
     });
 
-    // 6. <input type="image">
-    document.querySelectorAll('input[type="image"]').forEach(input => {
-      if (input.src && input.src.startsWith('http')) addImage(input.src, 0, 0, input);
-    });
-
-    // 7. Inline SVG
-    document.querySelectorAll('svg').forEach(svg => {
-      try {
-        const svgString = U.getCompleteSVGString(svg);
-        const dataUrl = U.svgToBase64(svgString);
-        if (dataUrl) addImage(dataUrl, svg.width?.baseVal?.value || 0, svg.height?.baseVal?.value || 0, svg);
-      } catch (e) {}
-    });
-
-    // 8. CSS background images
-    document.querySelectorAll('*').forEach(el => {
+    document.querySelectorAll('*').forEach((el) => {
       try {
         const bg = getComputedStyle(el).backgroundImage;
-        if (bg && bg !== 'none') {
-          const matches = bg.match(/url\(["']?(.*?)["']?\)/g);
-          if (matches) {
-            matches.forEach(m => {
-              const urlMatch = m.match(/url\(["']?(.*?)["']?\)/);
-              if (urlMatch) {
-                let url = urlMatch[1];
-                if (url && !url.startsWith('http')) {
-                  try { url = new URL(url, window.location.href).href; } catch (e) {}
-                }
-                if (url && url.startsWith('http')) addImage(url, el.clientWidth, el.clientHeight, el);
-              }
-            });
+        if (!bg || bg === 'none') return;
+        const matches = bg.match(/url\(["']?(.*?)["']?\)/g);
+        if (!matches) return;
+        matches.forEach((m) => {
+          const urlMatch = m.match(/url\(["']?(.*?)["']?\)/);
+          if (!urlMatch) return;
+          let url = urlMatch[1];
+          if (url && !url.startsWith('http')) {
+            try { url = new URL(url, window.location.href).href; } catch { /* ignore */ }
           }
-        }
-      } catch (e) {}
-    });
-
-    // 9. Direct links to image files
-    document.querySelectorAll('a[href]').forEach(a => {
-      const href = a.href;
-      if (/\.(jpg|jpeg|png|gif|bmp|ico|webp|svg|tif|apng|jfif|pjpeg|pjp)$/i.test(href)) {
-        addImage(href, 0, 0, a);
+          if (url) addImage(url, el.clientWidth, el.clientHeight, el);
+        });
+      } catch {
+        /* ignore */
       }
     });
 
-    // 10. Image URLs embedded in page HTML
-    try {
-      const bodyHTML = document.body.innerHTML;
-      const urls = bodyHTML.match(/https?:\/\/[^"'\s]+\.(jpg|jpeg|png|gif|bmp|ico|webp|svg|tif|apng|jfif|pjpeg|pjp)/gi) || [];
-      urls.forEach(url => {
-        if (url && url.startsWith('http')) addImage(url, 0, 0, null);
-      });
-    } catch (e) {}
+    document.querySelectorAll('a[href]').forEach((a) => {
+      if (/\.(jpg|jpeg|png|gif|bmp|ico|webp|svg|tif|apng|jfif|pjpeg|pjp)(\?|$)/i.test(a.href)) {
+        addImage(a.href, 0, 0, a);
+      }
+    });
 
-    // Запускаем фоновое получение размеров
-    (async () => {
+    const regex = /https?:\/\/[^"'\s]+\.(jpg|jpeg|png|gif|bmp|ico|webp|svg|tif|apng|jfif|pjpeg|pjp)/gi;
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while (walker.nextNode()) {
+      const matches = walker.currentNode.nodeValue?.match(regex);
+      if (matches) matches.forEach((url) => addImage(url, 0, 0, null));
+    }
+
+    images._ready = (async () => {
       for (const img of images) {
-        if (img.size === null) {
-          img.size = await fetchSize(img.url);
-        }
+        if (img.size === null) img.size = await fetchSize(img.url);
       }
-      // Обновляем список, если панель открыта
-      if (window.IDP.applyFilters) {
-        window.IDP.applyFilters();
-      }
+      if (exports.applyFilters) exports.applyFilters();
     })();
 
     return images;
   }
 
   exports.collectAllImages = collectAllImages;
-
 })(window.IDP);

@@ -1,12 +1,9 @@
 /**
  * Image Downloader Pro — Area Selector
- * Lets the user draw a rectangle on the screen and returns
- * only those images from the full list that intersect the selection.
  */
 window.IDP = window.IDP || {};
 
 (function(exports) {
-
   function startAreaSelection(fullImageList) {
     return new Promise(resolve => {
       const overlay = document.createElement('div');
@@ -53,45 +50,24 @@ window.IDP = window.IDP || {};
       };
 
       const finish = () => {
-        // ВАЖНО: получить rect ДО cleanup(), пока элемент ещё в DOM
         const rect = selectionDiv ? selectionDiv.getBoundingClientRect() : null;
         cleanup();
-
         if (!rect || (rect.width === 0 && rect.height === 0)) {
           return resolve([]);
         }
-
         const intersecting = [];
-
         for (const img of fullImageList) {
           if (img.el && typeof img.el.getBoundingClientRect === 'function') {
             try {
               const er = img.el.getBoundingClientRect();
               if (er.width === 0 || er.height === 0) continue;
-              if (
-                er.right > rect.left &&
-                er.left < rect.right &&
-                er.bottom > rect.top &&
-                er.top < rect.bottom
-              ) {
-                intersecting.push({
-                  url: img.url,
-                  width: img.width,
-                  height: img.height,
-                  ext: img.ext,
-                  size: null,
-                  el: img.el
-                });
+              if (er.right > rect.left && er.left < rect.right &&
+                  er.bottom > rect.top && er.top < rect.bottom) {
+                intersecting.push({ ...img, size: null });
               }
-            } catch (e) {
-              // Элемент мог быть удалён со страницы
-            }
+            } catch(e) {}
           }
         }
-
-        // Если ничего не нашли по координатам, но есть изображения без DOM-элемента —
-        // возвращаем пустой массив, а не всё подряд.
-        // (Раньше здесь был агрессивный fallback, который портил логику)
         resolve(intersecting);
       };
 
@@ -111,5 +87,4 @@ window.IDP = window.IDP || {};
   }
 
   exports.startAreaSelection = startAreaSelection;
-
 })(window.IDP);

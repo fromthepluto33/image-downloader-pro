@@ -1,57 +1,52 @@
 {
-  "manifest_version": 3,
-  "name": "Image Downloader Pro",
-  "version": "1.0.0",
-  "description": "Скачивает изображения со страницы в ZIP-архив",
-  "permissions": [
-    "activeTab",
-    "scripting",
-    "storage",
-    "downloads"
-  ],
-  "host_permissions": [
-    "<all_urls>"
-  ],
-  "background": {
-    "scripts": [
-      "shared/common.js",
-      "shared/zip.js",
-      "background.js"
-    ]
-  },
-  "action": {
-    "default_title": "Image Downloader Pro",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
-  "browser_specific_settings": {
-    "gecko": {
-      "strict_min_version": "140.0",
-      "id": "fromthemoon33@gmail.com",
-      "data_collection_permissions": {
-        "required": [
-          "none"
-        ]
-      }
-    }
-  },
-  "web_accessible_resources": [
+    "manifest_version": 3,
+    "name": "Image Downloader Pro",
+    "version": "1.0.1",
+    "description": "Скачивайте изображения с любой страницы — по одному или массово в ZIP-архиве с конвертацией.",
+    "permissions": ["activeTab", "scripting", "downloads", "storage"],
+    "host_permissions": ["<all_urls>"],
+    "action":
     {
-      "resources": [
-        "content/inject.css",
-        "icons/icon48.png",
-        "icons/icon16.png",
-        "icons/icon128.png"
-      ],
-      "matches": ["<all_urls>"]
+        "default_title": "Image Downloader Pro",
+        "default_icon":
+        {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "icons":
+    {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "background":
+    {
+        "scripts": ["background.js"]
+    },
+    "web_accessible_resources": [
+    {
+        "resources": [
+            "icons/*",
+            "libs/jszip.min.js",
+            "content/util.js",
+            "content/imageCollector.js",
+            "content/areaSelector.js",
+            "content/panel.js",
+            "content/inject.css"
+        ],
+        "matches": ["<all_urls>"]
+    }],
+    "browser_specific_settings":
+    {
+        "gecko":
+        {
+            "id": "fromthemoon33@gmail.com",
+            "data_collection_permissions":
+            {
+                "required": ["none"]
+            }
+        }
     }
-  ]
 }

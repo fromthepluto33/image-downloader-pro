@@ -30,7 +30,8 @@ window.IDP = window.IDP || {};
     if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / 1048576).toFixed(2) + ' MB';
   }
-  function truncateUrl(url, maxLen = 50) {
+  function truncateUrl(url, maxLen) {
+    maxLen = maxLen || 50;
     if (!url) return '';
     return url.length > maxLen ? url.substring(0, maxLen) + '…' : url;
   }
@@ -97,7 +98,8 @@ window.IDP = window.IDP || {};
     }
     return svgClone.outerHTML;
   }
-  function querySelectorAllShadows(selector, el = document.body) {
+  function querySelectorAllShadows(selector, el) {
+    el = el || document.body;
     const childShadows = Array.from(el.querySelectorAll('*'))
       .map(el => el.shadowRoot)
       .filter(Boolean);
@@ -106,7 +108,15 @@ window.IDP = window.IDP || {};
     return results.concat(childResults).flat();
   }
   Object.assign(exports, {
-    safeAttr, safeText, sanitizeFilename, getNameFromUrl, getExtFromUrl,
-    formatSize, truncateUrl, svgToBase64, getCompleteSVGString, querySelectorAllShadows
+    safeAttr: safeAttr,
+    safeText: safeText,
+    sanitizeFilename: sanitizeFilename,
+    getNameFromUrl: getNameFromUrl,
+    getExtFromUrl: getExtFromUrl,
+    formatSize: formatSize,
+    truncateUrl: truncateUrl,
+    svgToBase64: svgToBase64,
+    getCompleteSVGString: getCompleteSVGString,
+    querySelectorAllShadows: querySelectorAllShadows
   });
 })(window.IDP);

@@ -102,46 +102,62 @@ window.IDP = window.IDP || {};
   }
 
   // ========== МАССОВОЕ СКАЧИВАНИЕ ==========
-  async function downloadSelected() {
+async function downloadSelected() {
     const urls = Array.from(selected);
     if (!urls.length) {
-      if (statusEl) statusEl.textContent = 'Ничего не выбрано';
-      return;
+        if (statusEl) statusEl.textContent = 'Ничего не выбрано';
+        return;
     }
     showProgress('Подготовка к скачиванию...');
     updateProgress(0, 'Формирование архива...');
+
     const images = [];
+    const usedNames = new Map();
+
     for (let i = 0; i < urls.length; i++) {
-      const url = urls[i];
-      let baseName;
-      if (currentSettings.fileNamePattern === 'original') {
-        let raw = url.split('/').pop().split('?')[0];
-        let dot = raw.lastIndexOf('.');
-        baseName = dot !== -1 ? raw.substring(0, dot) : raw;
-        if (!baseName || baseName === 'i') baseName = 'image_' + (i+1);
-      } else if (currentSettings.fileNamePattern === 'numbered') {
-        baseName = 'image_' + (i+1);
-      } else {
-        baseName = currentSettings.customFileName || 'image';
-        if (urls.length > 1) baseName = baseName + '_' + (i+1);
-      }
-      baseName = baseName.replace(/[<>:"/\\|?*]/g, '_').trim();
-      if (!baseName) baseName = 'image_' + (i+1);
-      images.push({
-        url: url,
-        targetFormat: currentSettings.convertTo !== 'original' ? currentSettings.convertTo : 'original',
-        baseName: baseName
-      });
-      updateProgress((i+1)/urls.length * 100, 'Подготовлено ' + (i+1) + '/' + urls.length);
+        const url = urls[i];
+        let rawBaseName;
+
+        if (currentSettings.fileNamePattern === 'original') {
+            let raw = url.split('/').pop().split('?')[0];
+            let dot = raw.lastIndexOf('.');
+            rawBaseName = dot !== -1 ? raw.substring(0, dot) : raw;
+            if (!rawBaseName || rawBaseName === 'i') rawBaseName = 'image';
+        } else if (currentSettings.fileNamePattern === 'numbered') {
+            rawBaseName = 'image';
+        } else {
+            rawBaseName = currentSettings.customFileName || 'image';
+        }
+
+        rawBaseName = rawBaseName.replace(/[<>:"/\\|?*]/g, '_').trim();
+        if (!rawBaseName) rawBaseName = 'image';
+
+        // Уникализация имени
+        let baseName = rawBaseName;
+        let counter = 1;
+        while (usedNames.has(baseName)) {
+            baseName = `${rawBaseName}-${counter}`;
+            counter++;
+        }
+        usedNames.set(baseName, true);
+
+        images.push({
+            url: url,
+            targetFormat: currentSettings.convertTo !== 'original' ? currentSettings.convertTo : 'original',
+            baseName: baseName
+        });
+
+        updateProgress((i + 1) / urls.length * 100, `Подготовлено ${i + 1}/${urls.length}`);
     }
+
     chrome.runtime.sendMessage({
-      action: 'downloadBatch',
-      images: images,
-      zipFileName: currentSettings.zipFileName
+        action: 'downloadBatch',
+        images: images,
+        zipFileName: currentSettings.zipFileName
     });
     hideProgress();
     if (statusEl) statusEl.textContent = 'Архив создаётся...';
-  }
+}
 
   // ========== UI ФУНКЦИИ ==========
   function updateSelectionUI() {

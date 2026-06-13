@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Image Downloader Pro",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Скачивайте изображения с любой страницы — по одному или массово в ZIP-архиве с конвертацией.",
     "permissions": ["activeTab", "scripting", "downloads", "storage"],
     "host_permissions": ["<all_urls>"],
@@ -23,13 +23,13 @@
     },
     "background":
     {
-        "scripts": ["background.js"]
+        "scripts": ["libs/client-zip.js", "background.js"]
     },
     "web_accessible_resources": [
     {
         "resources": [
             "icons/*",
-            "libs/jszip.min.js",
+            "libs/client-zip.js",
             "content/util.js",
             "content/imageCollector.js",
             "content/areaSelector.js",
